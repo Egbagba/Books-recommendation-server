@@ -7,8 +7,9 @@ const bookSchema = new Schema({
     description: { type: String, required: true },
     year: { type: Number, default: 1111 },
     ratings: { type: Number, default: 4.6 },
-    image_placeholder: { type: String, required: true }
-});
+    image_placeholder: { type: String, required: true },
+/*     tasks: [{type: Schema.Types.ObjectId, ref: 'Task'}],
+ */});
 
 const Book = model('Book', bookSchema); // Using the 'model' function
 
