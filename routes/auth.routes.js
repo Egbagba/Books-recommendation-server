@@ -1,5 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const crypto = require("crypto");
+const sendPasswordResetEmail = require("../mailservices/mailer.js")
+
 
 // ℹ️ Handles password encryption
 const bcrypt = require("bcrypt");
@@ -19,7 +22,7 @@ const saltRounds = 10;
 // POST /auth/signup  - Creates a new user in the database
 router.post("/signup", (req, res) => {
   const { email, password, name } = req.body;
-  
+
 
   // Check if email or password or name are provided as empty strings
   if (email === "" || password === "" || name === "") {
@@ -117,6 +120,98 @@ router.post("/login", (req, res) => {
       }
     })
     .catch((err) => next(err)); // In this case, we send error handling to the error handling middleware.
+});
+
+// POST /auth/forgot-password - Initiates the password reset process
+router.post("/forgot-password", (req, res, next) => {
+  const { email } = req.body;
+
+  // Validate the email
+  if (!email) {
+    res.status(400).json({ message: "Provide a valid email address." });
+    return;
+  }
+
+  // Find the user by email
+  User.findOne({ email })
+    .then((user) => {
+      if (!user) {
+        res.status(404).json({ message: "User not found." });
+        return;
+      }
+
+      // Generate a unique token for password reset
+      const resetToken = crypto.randomBytes(20).toString("hex");
+      // Set the expiration time for the reset token (e.g., 1 hour)
+      const resetTokenExpires = Date.now() + 3600000; // 1 hour
+
+      // Update the user's record in the database with the reset token and expiration time
+      user.resetToken = resetToken;
+      user.resetTokenExpires = resetTokenExpires;
+      return user.save();
+    })
+    .then((user) => {
+      // Send an email to the user with the password reset link/token
+      sendPasswordResetEmail(user.email, user.resetToken);
+
+      // Respond with success
+      res.status(200).json({ message: "Password reset instructions sent to your email." });
+    })
+    .catch((err) => next(err));
+});
+
+// GET /auth/reset-password/:token - Renders the password reset form
+router.get("/reset-password/:token", (req, res) => {
+  const { token } = req.params;
+
+  console.log("Recieved token", token);
+
+  // Validate the token and render the password reset form
+  User.findOne({
+    resetToken: token,
+    resetTokenExpires: { $gt: Date.now() },
+  })
+    .then((user) => {
+      if (!user) {
+        res.status(400).json({ message: "Invalid or expired reset token." });
+        return;
+      }
+      // Render your password reset form here
+      // Example: res.render("reset-password", { token });
+    })
+    .catch((err) => res.status(500).json({ message: "Internal server error.", err }));
+});
+
+// POST /auth/reset-password/:token - Handles the password reset submission
+router.post("/reset-password/:token", (req, res, next) => {
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  // Validate the token
+  User.findOne({
+    resetToken: token,
+    resetTokenExpires: { $gt: Date.now() },
+  })
+    .then((user) => {
+      if (!user) {
+        res.status(400).json({ message: "Invalid or expired reset token." });
+        return;
+      }
+
+      // Update the user's password in the database
+      const salt = bcrypt.genSaltSync(saltRounds);
+      const hashedPassword = bcrypt.hashSync(newPassword, salt);
+      user.password = hashedPassword;
+      user.resetToken = null;
+      user.resetTokenExpires = null;
+
+      return user.save();
+    })
+    .then(() => {
+      // Respond with success
+      res.status(200).json({ message: "Password successfully reset." });
+    })
+    .catch((err) => next(err));
 });
 
 // GET  /auth/verify  -  Used to verify JWT stored on the client
