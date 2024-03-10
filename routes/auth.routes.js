@@ -19,6 +19,10 @@ const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 // How many rounds should bcrypt run the salt (default - 10 rounds)
 const saltRounds = 10;
 
+
+const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+
 // POST /auth/signup  - Creates a new user in the database
 router.post("/signup", (req, res) => {
   const { email, password, name } = req.body;
@@ -126,6 +130,8 @@ router.post("/login", (req, res) => {
 router.post("/forgot-password", (req, res, next) => {
   const { email } = req.body;
 
+
+  
   // Validate the email
   if (!email) {
     res.status(400).json({ message: "Provide a valid email address." });
@@ -152,7 +158,8 @@ router.post("/forgot-password", (req, res, next) => {
     })
     .then((user) => {
       // Send an email to the user with the password reset link/token
-      sendPasswordResetEmail(user.email, user.resetToken);
+      const resetLink = `${frontendURL}/reset-password/${user.resetToken}`;
+      sendPasswordResetEmail(user.email, resetLink);
 
       // Respond with success
       res.status(200).json({ message: "Password reset instructions sent to your email." });
