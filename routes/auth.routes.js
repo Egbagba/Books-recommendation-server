@@ -141,12 +141,16 @@ router.post("/forgot-password", (req, res, next) => {
 
       // Generate a unique token for password reset
       const resetToken = crypto.randomBytes(20).toString("hex");
+      console.log("Backend Reset Token:", resetToken); // Log the reset token on the backend
+
       // Set the expiration time for the reset token (e.g., 1 hour)
       const resetTokenExpires = Date.now() + 3600000; // 1 hour
 
       // Update the user's record in the database with the reset token and expiration time
       user.resetToken = resetToken;
       user.resetTokenExpires = resetTokenExpires;
+
+      // Save the changes to the user document in the database
       return user.save();
     })
     .then((user) => {
