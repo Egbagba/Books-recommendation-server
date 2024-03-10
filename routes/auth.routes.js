@@ -161,67 +161,75 @@ router.post("/forgot-password", (req, res, next) => {
 });
 
 // GET /auth/reset-password/:token - Renders the password reset form
-router.get("/reset-password/:token", (req, res) => {
+router.get("/reset-password/:token", async (req, res) => {
   const { token } = req.params;
 
   console.log("Received token", token);
 
-  // Validate the token and render the password reset form
-  User.findOne({
-    resetToken: token,
-    resetTokenExpires: { $gt: Date.now() },
-  })
-    .then((user) => {
-      if (!user) {
-        res.status(400).json({ message: "Invalid or expired reset token." });
-        return;
-      }
-      // Render your password reset form here
-      // Example: res.render("reset-password", { token });
-    })
-    .catch((err) => res.status(500).json({ message: "Internal server error.", err }));
+  try {
+    // Validate the token and render the password reset form
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpires: { $lte: new Date() },
+      resetTokenExpires: { $ne: null, $exists: true }, // Check for non-null and non-undefined
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token." });
+    }
+
+    // Render your password reset form here
+    // Example: res.render("reset-password", { token });
+    res.status(200).json({ message: "Render your password reset form here." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error.", err });
+  }
 });
 
 // POST /auth/reset-password/:token - Handles the password reset submission
-router.post("/reset-password/:token", (req, res, next) => {
+router.post("/reset-password/:token", async (req, res, next) => {
   const { token } = req.params;
   const { newPassword } = req.body;
 
-  // Validate the token
-  User.findOne({
-    resetToken: token,
-    resetTokenExpires: { $gt: Date.now() },
-  })
-    .then((user) => {
-      if (!user) {
-        res.status(400).json({ message: "Invalid or expired reset token." });
-        return;
-      }
+  try {
+    // Validate the token
+    const user = await User.findOne({
+      resetToken: token,
+      resetTokenExpires: { $lte: new Date() },
+      resetTokenExpires: { $ne: null, $exists: true }, // Check for non-null and non-undefined
+    });
 
-      // Update the user's password in the database
-      const salt = bcrypt.genSaltSync(saltRounds);
-      const hashedPassword = bcrypt.hashSync(newPassword, salt);
-      user.password = hashedPassword;
-      user.resetToken = null;
-      user.resetTokenExpires = null;
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset token." });
+    }
 
-      return user.save();
-    })
-    .then(() => {
-      // Respond with success
-      res.status(200).json({ message: "Password successfully reset." });
-    })
-    .catch((err) => next(err));
+    // Update the user's password in the database
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const hashedPassword = bcrypt.hashSync(newPassword, salt);
+    user.password = hashedPassword;
+    user.resetToken = null;
+    user.resetTokenExpires = null;
+
+    await user.save();
+
+    // Respond with success
+    res.status(200).json({ message: "Password successfully reset." });
+  } catch (err) {
+    next(err);
+  }
 });
+
 
 // GET  /auth/verify  -  Used to verify JWT stored on the client
 router.get("/verify", isAuthenticated, (req, res) => {
-  // If JWT token is valid the payload gets decoded by the
+    // If JWT token is valid the payload gets decoded by the
   // isAuthenticated middleware and is made available on `req.payload`
   console.log(`req.payload`, req.payload);
 
   // Send back the token payload object containing the user data
   res.status(200).json(req.payload);
 });
+
 
 module.exports = router;
