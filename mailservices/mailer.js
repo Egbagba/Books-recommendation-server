@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-const sendPasswordResetEmail = async (email, resetToken) => {
+const sendPasswordResetEmail = async (email, resetToken, frontendURL) => {
   // Create a nodemailer transporter using your email provider's credentials
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -15,7 +15,7 @@ const sendPasswordResetEmail = async (email, resetToken) => {
     from: 'eseegbas@gmail.com',
     to: email,
     subject: 'Password Reset',
-    text: `Click the following link to reset your password: http://your-frontend-app/reset-password/${resetToken}`,
+    text: `Click the following link to reset your password: ${frontendURL}/reset-password/${resetToken}`,
   };
 
   // Send the email

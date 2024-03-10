@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const crypto = require("crypto");
-const sendPasswordResetEmail = require("../mailservices/mailer.js")
-
+const sendPasswordResetEmail = require("../mailservices/mailer.js");
 
 // ℹ️ Handles password encryption
 const bcrypt = require("bcrypt");
@@ -10,43 +9,39 @@ const bcrypt = require("bcrypt");
 // ℹ️ Handles password encryption
 const jwt = require("jsonwebtoken");
 
-// Require the User model in order to interact with the database
+// Require the User model to interact with the database
 const User = require("../models/User.model");
 
-// Require necessary (isAuthenticated) middleware in order to control access to specific routes
+// Require necessary (isAuthenticated) middleware to control access to specific routes
 const { isAuthenticated } = require("../middleware/jwt.middleware.js");
 
 // How many rounds should bcrypt run the salt (default - 10 rounds)
 const saltRounds = 10;
 
-
 const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
-
 
 // POST /auth/signup  - Creates a new user in the database
 router.post("/signup", (req, res) => {
   const { email, password, name } = req.body;
 
-
   // Check if email or password or name are provided as empty strings
   if (email === "" || password === "" || name === "") {
-    res.status(400).json({ message: "Provide email, password and name" });
+    res.status(400).json({ message: "Provide email, password, and name" });
     return;
   }
 
-  // This regular expression check that the email is of a valid format
+  // This regular expression checks that the email is of a valid format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   if (!emailRegex.test(email)) {
     res.status(400).json({ message: "Provide a valid email address." });
     return;
   }
 
-  // This regular expression checks password for special characters and minimum length
+  // This regular expression checks the password for special characters and minimum length
   const passwordRegex = /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/;
   if (!passwordRegex.test(password)) {
     res.status(400).json({
-      message:
-        "Password must have at least 6 characters and contain at least one number, one lowercase and one uppercase letter.",
+      message: "Password must have at least 6 characters and contain at least one number, one lowercase, and one uppercase letter.",
     });
     return;
   }
@@ -76,7 +71,7 @@ router.post("/signup", (req, res) => {
       // Create a new object that doesn't expose the password
       const user = { email, name, _id };
 
-      // Send a json response containing the user object
+      // Send a JSON response containing the user object
       res.status(201).json({ user: user });
     })
     .catch((err) => next(err)); // In this case, we send error handling to the error handling middleware.
@@ -86,7 +81,7 @@ router.post("/signup", (req, res) => {
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  // Check if email or password are provided as empty string
+  // Check if email or password are provided as an empty string
   if (email === "" || password === "") {
     res.status(400).json({ message: "Provide email and password." });
     return;
@@ -130,8 +125,6 @@ router.post("/login", (req, res) => {
 router.post("/forgot-password", (req, res, next) => {
   const { email } = req.body;
 
-
-  
   // Validate the email
   if (!email) {
     res.status(400).json({ message: "Provide a valid email address." });
@@ -171,7 +164,7 @@ router.post("/forgot-password", (req, res, next) => {
 router.get("/reset-password/:token", (req, res) => {
   const { token } = req.params;
 
-  console.log("Recieved token", token);
+  console.log("Received token", token);
 
   // Validate the token and render the password reset form
   User.findOne({
