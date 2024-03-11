@@ -21,7 +21,7 @@ const saltRounds = 10;
 const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // POST /auth/signup  - Creates a new user in the database
-router.post("/signup", (req, res) => {
+router.post("/signup", (req, res, next) => {
   const { email, password, name } = req.body;
 
   // Check if email or password or name are provided as empty strings
