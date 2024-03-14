@@ -16,9 +16,9 @@ router.post("/book", (req, res) => {
         description,
         year,
         ratings,
-        image_placeholder } = req.body;
+        image } = req.body;
 
-    Book.create({ title, author, description, year, ratings, image_placeholder, tasks: [] })
+    Book.create({ title, author, description, year, ratings, image_placeholder:image })
         .then((response) => res.json(response))
         .catch((error) => res.json(error));
 });
